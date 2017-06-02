@@ -1,11 +1,11 @@
-
 from collections import defaultdict
 
 class Compound(object):
     names = {"C": "Carbon", "Fe": "Iron", "O": "Oxygen", "S":"Sulfur", "H":"Hydrogen"}
 
     def __init__(self, text): #this method counts the number of elements in each compound
-        self.text = text
+        self.coeff = int(text[0]) if len(text) > 0 and text[0].isdigit() else 1
+        self.text = text if self.coeff == 1 else text[1:]
         self.elements = defaultdict(lambda: 0)
         self.parse()
 
@@ -26,31 +26,75 @@ class Compound(object):
             else:
                 raise ValueError #if compound has a character that isn't a letter or digit, raise a ValueError
 
-    def __add__(self, other):
+    def __add__(self, other): #creates a temporary Compound in which both dictionaries of 2 compounds are added
         if other is None:
             return self
-        return Compound(self.text + other.text)
+        t = self.copy()
+        new_t = defaultdict(lambda: 0)
+        for key,value in other.elements.items():
+            new_t[key] += other.coeff*value
+        for key,value in t.elements.items():
+            new_t[key] += t.coeff*value
+        t.coeff = 1
+        t.elements = new_t
+        return t
+
+    def __rmul__(self, c):
+        t = self.copy()
+        t.coeff *= c
+        return t
+
+    def copy(self):
+        n = Compound('')
+        n.text = self.text
+        n.elements = self.elements
+        n.coeff = self.coeff
+        return n
+
+    def list(self):
+        return "".join([f"{self.names[k]}: {v*self.coeff}\n" for (k,v) in self.elements.items()])
 
     def __str__(self):
-        return "".join([f"{self.names[k]}: {v}\n" for (k,v) in self.elements.items()])
+        return str(self.coeff)+self.text
 
     def __eq__(self, other):
         for k,v in self.elements.items():
-            if other.elements[k] != v:
+            if other.coeff*other.elements[k] != self.coeff*v:
                 return False
         return True
 
 def is_balanced(cmpd1, cmpd2, cmpd3, cmpd4=None):
     return (cmpd1 + cmpd2) == (cmpd3 + cmpd4)
 
+def lcm(cmpds): #https://stackoverflow.com/questions/147515/least-common-multiple-for-3-or-more-numbers
+    def gcd(a, b):
+        while b > 0:
+            a, b = b, a % b #this is done so both actions are performed simultaneously
+            return a
+    def lcm(t):
+        if len(t) == 2:
+            if not isinstance(t[1], float):
+                t1 = t[1].coeff
+            else: t1 = t[1]
+            t0 = t[0].coeff
+            return t0 * t1 / gcd(t0, t1)
+        t0, *t_ = t
+        return lcm([t0, lcm(t_)])
+    return lcm(cmpds)
 
 if __name__ == "__main__":
-    cmpd1 = Compound("C2H5O2")
-    cmpd2 = Compound("CO2")
-    cmpd3 = Compound("C3H3O4")
-    cmpd4 = Compound("H2")
+    input1 = input('\nEnter Compound 1: ')
+    input2 = input('\nEnter Compound 2: ')
+    input3 = input('\nEnter Compound 3: ')
+
+    cmpd1 = Compound(input1)
+    cmpd2 = Compound(input2)
+    cmpd3 = Compound(input3)
+
     print(
-        f"{cmpd1.text} + {cmpd2.text} => {cmpd3.text} + {cmpd4.text} is balanced"
-        if is_balanced(cmpd1, cmpd2, cmpd3, cmpd4) else
-        f"{cmpd1.text} + {cmpd2.text} => {cmpd3.text} + {cmpd4.text} is not balanced"
-    )
+        f"\n\n{cmpd1} + {cmpd2} => {cmpd3} is balanced\n"
+        if is_balanced(cmpd1, cmpd2, cmpd3) else
+        f"\n\n{cmpd1} + {cmpd2} => {cmpd3} is not balanced\n"
+        )
+
+    print(lcm([cmpd1, cmpd2, cmpd3]))
