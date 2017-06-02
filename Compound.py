@@ -1,7 +1,8 @@
 from collections import defaultdict
+import periodictable as pt
 
 class Compound(object):
-    names = {"C": "Carbon", "Fe": "Iron", "O": "Oxygen", "S":"Sulfur", "H":"Hydrogen"}
+    names = {el.symbol: el for el in pt.elements}
 
     def __init__(self, text): #this method counts the number of elements in each compound
         self.coeff = int(text[0]) if len(text) > 0 and text[0].isdigit() else 1
@@ -30,12 +31,12 @@ class Compound(object):
         if other is None:
             return self
         t = self.copy()
-        new_t = defaultdict(lambda: 0)
+        new_t = defaultdict(lambda: 0) #need to resolve coefficients
         for key,value in other.elements.items():
             new_t[key] += other.coeff*value
         for key,value in t.elements.items():
             new_t[key] += t.coeff*value
-        t.coeff = 1
+        t.coeff = 1 #reset coefficient to 1 now that they've been resolved
         t.elements = new_t
         return t
 
@@ -52,10 +53,13 @@ class Compound(object):
         return n
 
     def list(self):
-        return "".join([f"{self.names[k]}: {v*self.coeff}\n" for (k,v) in self.elements.items()])
+        return "".join([f"{self.names[k].name}: {v*self.coeff}\n" for (k,v) in self.elements.items()])
 
     def __str__(self):
-        return str(self.coeff)+self.text
+        if self.coeff is not 1:
+            return str(self.coeff)+self.text
+        else:
+            return self.text
 
     def __eq__(self, other):
         for k,v in self.elements.items():
@@ -73,28 +77,29 @@ def lcm(cmpds): #https://stackoverflow.com/questions/147515/least-common-multipl
             return a
     def lcm(t):
         if len(t) == 2:
-            if not isinstance(t[1], float):
-                t1 = t[1].coeff
-            else: t1 = t[1]
             t0 = t[0].coeff
+            t1 = t[1] if isinstance(t[1], float) else t[1].coeff
             return t0 * t1 / gcd(t0, t1)
         t0, *t_ = t
         return lcm([t0, lcm(t_)])
     return lcm(cmpds)
 
 if __name__ == "__main__":
-    input1 = input('\nEnter Compound 1: ')
-    input2 = input('\nEnter Compound 2: ')
-    input3 = input('\nEnter Compound 3: ')
+    input1 = input('Enter Compound 1: ')
+    input2 = input('Enter Compound 2: ')
+    input3 = input('Enter Compound 3: ')
 
     cmpd1 = Compound(input1)
     cmpd2 = Compound(input2)
     cmpd3 = Compound(input3)
 
-    print(
-        f"\n\n{cmpd1} + {cmpd2} => {cmpd3} is balanced\n"
-        if is_balanced(cmpd1, cmpd2, cmpd3) else
-        f"\n\n{cmpd1} + {cmpd2} => {cmpd3} is not balanced\n"
-        )
+    print("\nReactants:")
+    print((cmpd1+cmpd2).list())
+    print("Products:")
+    print(cmpd3.list())
 
-    print(lcm([cmpd1, cmpd2, cmpd3]))
+    print(
+        f"{cmpd1} + {cmpd2} => {cmpd3} is balanced\n"
+        if is_balanced(cmpd1, cmpd2, cmpd3) else
+        f"{cmpd1} + {cmpd2} => {cmpd3} is not balanced\n"
+        )
